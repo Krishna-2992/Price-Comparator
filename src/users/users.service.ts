@@ -13,9 +13,7 @@ export class UserService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
       // Check if user exists
-      const existingUser = await this.userModel.findOne({
-        email: createUserDto.email,
-      });
+      const existingUser = await this.findByEmail(createUserDto.email);
       if (existingUser) {
         throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
       }
@@ -49,16 +47,19 @@ export class UserService {
     }
   }
 
+  // Add this method for finding user by email
+  async findByEmail(email: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ email }).exec();
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     try {
-      const updateData = { ...updateUserDto };
-
-      if (updateData.password) {
-        updateData.password = await bcrypt.hash(updateData.password, 10);
+      if (updateUserDto.password) {
+        updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
       }
 
       const updatedUser = await this.userModel
-        .findByIdAndUpdate(id, updateData, { new: true })
+        .findByIdAndUpdate(id, updateUserDto, { new: true })
         .select('-password')
         .exec();
 
